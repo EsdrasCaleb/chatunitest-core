@@ -390,11 +390,18 @@ public class ProjectParser {
                 return Integer.parseInt(parts[0]);
             } catch (NumberFormatException e) {
                 // Handle error if version format is unexpected
-                throw new IllegalArgumentException("Invalid Java version format: " + versionStr, e);
+                throw new IllegalArgumentException("Invalid Java version format not number: " + versionStr, e);
             }
         }
-        // Fallback if version format is unexpected
-        throw new IllegalArgumentException("Invalid Java version format: " + versionStr);
+        else {
+            try {
+                // Major version
+                return Integer.parseInt(versionStr);
+            } catch (NumberFormatException e) {
+                // Handle error if version format is unexpected
+                throw new IllegalArgumentException("Invalid Java version format not number: " + versionStr, e);
+            }
+        }
     }
 
 }

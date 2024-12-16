@@ -74,29 +74,33 @@ public class PhaseImpl implements Phase {
         // Example logic to select Phase subclass based on config properties
         String phaseTypeString = config.getPhaseType();
 
+        PhaseType phaseType = null; // Default or fallback Phase
         try {
-            PhaseType phaseType = PhaseType.valueOf(phaseTypeString); // todo 这里似乎如果没有找到枚举对象会直接崩溃
-            switch (phaseType) {
-                case TELPA:
-                    return new TELPA(config);
-                case TESTPILOT:
-                    return new TESTPILOT(config);
-                case COVERUP:
-                    return new COVERUP(config);
-                case HITS:
-                    return new HITS(config);
-                case SYMPROMPT:
-                    return new SYMPROMPT(config);
-                case CHATTESTER:
-                    return new CHATTESTER(config);
-                case MUTAP:
-                    return new MUTAP(config);
-                default:
-                    return new PhaseImpl(config); // Default or fallback Phase
-            }
-        }catch (IllegalArgumentException e) {
+            phaseType = PhaseType.valueOf(phaseTypeString); // todo 这里似乎如果没有找到枚举对象会直接崩溃
+        }
+        catch(Exception e) {
+            System.err.println("Invalid phase type: " + phaseTypeString);
             return new PhaseImpl(config); // Default or fallback Phase
         }
+        switch (phaseType) {
+            case TELPA:
+                return new TELPA(config);
+            case TESTPILOT:
+                return new TESTPILOT(config);
+            case COVERUP:
+                return new COVERUP(config);
+            case HITS:
+                return new HITS(config);
+            case SYMPROMPT:
+                return new SYMPROMPT(config);
+            case CHATTESTER:
+                return new CHATTESTER(config);
+            case MUTAP:
+                return new MUTAP(config);
+            default:
+                return new PhaseImpl(config); // Default or fallback Phase
+        }
+
 
     }
 }
