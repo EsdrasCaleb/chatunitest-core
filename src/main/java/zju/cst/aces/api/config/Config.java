@@ -139,6 +139,7 @@ public class Config {
         public int topP = 1;
         public int frequencyPenalty = 0;
         public int presencePenalty = 0;
+        public int timeout = 5;
         public Path testOutput;
         public Path counterExamplePath;
         public Path tmpOutput = Paths.get(System.getProperty("java.io.tmpdir"), "chatunitest-info");
@@ -278,6 +279,12 @@ public class Config {
 
         public ConfigBuilder phaseType(String phaseType){
             this.phaseType=phaseType;
+            return this;
+        }
+
+        public ConfigBuilder timeOut(int timeout){
+            this.timeout=timeout;
+            setClinet();
             return this;
         }
 
@@ -545,18 +552,18 @@ public class Config {
 
         public void setClinet() {
             this.client = new OkHttpClient.Builder()
-                    .connectTimeout(5, TimeUnit.MINUTES)
-                    .writeTimeout(5, TimeUnit.MINUTES)
-                    .readTimeout(5, TimeUnit.MINUTES)
+                    .connectTimeout(this.timeout, TimeUnit.MINUTES)
+                    .writeTimeout(this.timeout, TimeUnit.MINUTES)
+                    .readTimeout(this.timeout, TimeUnit.MINUTES)
                     .build();
         }
 
         public void setClinetwithProxy() {
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(this.hostname, Integer.parseInt(this.port)));
             this.client = new OkHttpClient.Builder()
-                    .connectTimeout(5, TimeUnit.MINUTES)
-                    .writeTimeout(5, TimeUnit.MINUTES)
-                    .readTimeout(5, TimeUnit.MINUTES)
+                    .connectTimeout(this.timeout, TimeUnit.MINUTES)
+                    .writeTimeout(this.timeout, TimeUnit.MINUTES)
+                    .readTimeout(this.timeout, TimeUnit.MINUTES)
                     .proxy(proxy)
                     .build();
         }
