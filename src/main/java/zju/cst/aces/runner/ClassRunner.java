@@ -112,6 +112,8 @@ public class ClassRunner extends AbstractRunner {
             case "MUTAP":
                 new MUTAPRunner(config, fullClassName, methodInfo).start();
                 break;
+            case "BENCHMARK":
+                new BenchmarkRunner(config, fullClassName, methodInfo).start();
             default:
                 new MethodRunner(config, fullClassName, methodInfo).start();
                 break;
