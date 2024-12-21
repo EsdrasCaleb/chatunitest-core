@@ -6,6 +6,7 @@ import zju.cst.aces.api.config.Config;
 import zju.cst.aces.runner.solution_runner.ChatTesterRunner;
 import zju.cst.aces.runner.solution_runner.HITSRunner;
 import zju.cst.aces.runner.solution_runner.MUTAPRunner;
+import zju.cst.aces.runner.solution_runner.BenchmarkRunner;
 import zju.cst.aces.util.Counter;
 import zju.cst.aces.util.TestClassMerger;
 import zju.cst.aces.util.ClassNameProcessor;

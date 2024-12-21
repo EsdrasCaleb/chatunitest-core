@@ -171,7 +171,7 @@ public class BenchmarkRunner extends MethodRunner {
             if (!record.isHasCode()) {
                 continue;
             }
-
+            System.out.println("Code:"+code);
             if (CodeExtractor.isTestMethod(code)) {
                 TestSkeleton skeleton = new TestSkeleton(promptInfo); // test skeleton to wrap a test method
                 code = skeleton.build(code);
@@ -207,8 +207,9 @@ public class BenchmarkRunner extends MethodRunner {
         ChatResponse response = ChatGenerator.chat(config, prompt);
         String content = ChatGenerator.getContentByResponse(response);
         config.getLogger().debug("[Response]:\n" + content);
+        System.out.println("[Response]:\n" + content);
         String code = ChatGenerator.extractCodeByContent(content);
-
+        System.out.println("[Extracted]:\n" + content);
         record.setPromptToken(response.getUsage().getPromptTokens());
         record.setResponseToken(response.getUsage().getCompletionTokens());
         record.setPrompt(prompt);

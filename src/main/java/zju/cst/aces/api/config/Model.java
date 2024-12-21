@@ -76,7 +76,10 @@ public enum Model {
                 return model;
             }
         }
-        throw new IllegalArgumentException("No Model with name " + modelName +
+        Model model = GPT_3_5_TURBO;
+        model.defaultConfig.modelName = modelName;
+        System.out.println("<Warning>No Model with name " + modelName +
                 "\nSupport models: " + Arrays.stream(Model.values()).map(Model::getModelName).collect(Collectors.joining(", ")));
+        return model;
     }
 }
