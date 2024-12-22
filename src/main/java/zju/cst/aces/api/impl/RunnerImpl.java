@@ -6,6 +6,7 @@ import zju.cst.aces.dto.MethodInfo;
 import zju.cst.aces.prompt.PromptFile;
 import zju.cst.aces.runner.ClassRunner;
 import zju.cst.aces.runner.MethodRunner;
+import zju.cst.aces.runner.solution_runner.BenchmarkRunner;
 import zju.cst.aces.runner.solution_runner.ChatTesterRunner;
 import zju.cst.aces.runner.solution_runner.HITSRunner;
 
@@ -39,6 +40,8 @@ public class RunnerImpl implements Runner {
         switch (phaseType) {
             case "CHATTESTER":
                 new ChatTesterRunner(config, fullClassName, methodInfo).start();
+            case "BENCHMARK":
+                new BenchmarkRunner(config, fullClassName, methodInfo).start();
             case "HITS":
                 new HITSRunner(config, fullClassName, methodInfo).start();
             default:

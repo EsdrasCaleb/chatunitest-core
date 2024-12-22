@@ -47,6 +47,7 @@ public class ClassRunner extends AbstractRunner {
                     continue;
                 }
 //                new MethodRunner(config, fullClassName, methodInfo).start();
+                System.out.println("Debug:"+config.getPhaseType());
                 selectRunner(config.getPhaseType(), fullClassName, methodInfo);
                 int newCount = config.getCompletedJobCount().incrementAndGet();
                 config.getLogger().info(String.format("\n==========================\n[%s] Completed Method Jobs:   [ %s /  %s]", config.pluginSign, newCount, config.getJobCount()));

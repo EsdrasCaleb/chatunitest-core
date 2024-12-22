@@ -57,12 +57,15 @@ public class Config {
     public boolean enableRuleRepair;
     public boolean enableMerge;
     public boolean enableObfuscate;
+    public boolean useIntention;
+    public String benchMarkCsv;
     public String[] obfuscateGroupIds;
     public int maxThreads;
     public int classThreads;
     public int methodThreads;
     public int testNumber;
     public int maxRounds;
+    public int maxInvalidRefinementCount;
     public int maxPromptTokens;
     public int maxResponseTokens;
     public int minErrorTokens;
@@ -123,12 +126,15 @@ public class Config {
         public boolean enableRuleRepair = true;
         public boolean enableMerge = true;
         public boolean enableObfuscate = false;
+        public boolean useIntention=true;
+        public String benchMarkCsv="benchmark.csv";
         public String[] obfuscateGroupIds;
         public int maxThreads = Runtime.getRuntime().availableProcessors() * 5;
         public int classThreads = (int) Math.ceil((double)  this.maxThreads / 10);
         public int methodThreads = (int) Math.ceil((double) this.maxThreads / this.classThreads);
         public int testNumber = 5;
         public int maxRounds = 5;
+        public int maxInvalidRefinementCount=3;
         public int maxPromptTokens = 2600;
         public int maxResponseTokens = 1024;
         public int minErrorTokens = 500;
@@ -288,6 +294,16 @@ public class Config {
             return this;
         }
 
+        public ConfigBuilder useIntention(boolean useIntention){
+            this.useIntention = useIntention;
+            return this;
+        }
+
+        public ConfigBuilder benchMarkCsv(String benchMarkCsv){
+            this.benchMarkCsv = benchMarkCsv;
+            return this;
+        }
+
         public ConfigBuilder useSlice(boolean useSlice){
             this.useSlice=useSlice;
             return this;
@@ -419,6 +435,11 @@ public class Config {
             return this;
         }
 
+        public ConfigBuilder maxInvalidRefinementCount(int maxInvalidRefinementCount){
+            this.maxInvalidRefinementCount = maxInvalidRefinementCount;
+            return this;
+        }
+
         public ConfigBuilder maxPromptTokens(int maxPromptTokens) {
             this.maxPromptTokens = maxPromptTokens;
             return this;
@@ -490,6 +511,17 @@ public class Config {
                     parent = parent.getParent();
                 }
                 this.testOutput = this.testOutput.resolve(project.getArtifactId());
+                File folder = this.testOutput.toFile();
+                if (!folder.exists()) {
+                    // Attempt to create the folder
+                    boolean created = folder.mkdirs(); // Creates the directory and all necessary parent directories
+
+                    if (created) {
+                        System.out.println("Folder created successfully: " + testOutput);
+                    } else {
+                        System.out.println("Failed to create folder: " + testOutput);
+                    }
+                }
             }
             return this;
         }
@@ -621,12 +653,15 @@ public class Config {
             config.setEnableRuleRepair(this.enableRuleRepair);
             config.setEnableMerge(this.enableMerge);
             config.setEnableObfuscate(this.enableObfuscate);
+            config.setUseIntention(this.useIntention);
+            config.setBenchMarkCsv(this.benchMarkCsv);
             config.setObfuscateGroupIds(this.obfuscateGroupIds);
             config.setMaxThreads(this.maxThreads);
             config.setClassThreads(this.classThreads);
             config.setMethodThreads(this.methodThreads);
             config.setTestNumber(this.testNumber);
             config.setMaxRounds(this.maxRounds);
+            config.setMaxInvalidRefinementCount(this.maxInvalidRefinementCount);
             config.setMaxPromptTokens(this.maxPromptTokens);
             config.setMaxResponseTokens(this.maxResponseTokens);
             config.setMinErrorTokens(this.minErrorTokens);

@@ -16,10 +16,13 @@ import zju.cst.aces.util.chattester.TesterValidator;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 public class BenchmarkRunner extends MethodRunner {
     public BenchmarkRunner(Config config, String fullClassName, MethodInfo methodInfo) throws IOException {
@@ -40,7 +43,7 @@ public class BenchmarkRunner extends MethodRunner {
                 + classInfo.methodSigs.get(methodInfo.methodSignature) + separator + num + separator + "Test";
         String fullTestName = fullClassName + separator + methodInfo.methodName + separator
                 + classInfo.methodSigs.get(methodInfo.methodSignature) + separator + num + separator + "Test";
-         config.getLogger().info("\n==========================\n[ChatUniTest] Generating test for method < "
+         config.getLogger().info("\n==========================\n[BENCHMARK] Generating test for method < "
                 + methodInfo.methodName + " > number " + num + "...\n");
 
         config.setValidator(new TesterValidator(config.getTestOutput(), config.getCompileOutputPath(),  config.getProject().getBasedir().toPath().resolve("target"), config.getClassPaths())); // 设置chattester的专属验证器
@@ -62,6 +65,7 @@ public class BenchmarkRunner extends MethodRunner {
 
         int errorNum = Integer.MAX_VALUE;
         int invalidRefinementCount = 0;
+        int totalCorrectionsCount = 0; // Initialize total corrections counter
         config.useExtra = true;
         for (int rounds = 0; rounds < config.getMaxRounds(); rounds++) {
             promptInfo.addRecord(new RoundRecord(rounds));
@@ -73,34 +77,41 @@ public class BenchmarkRunner extends MethodRunner {
 
             if (rounds == 0) {
                 // generate method intention
-                 config.getLogger().info("Creating intention for method < " + methodInfo.methodName + " > ...");
-                List<ChatMessage> intentionPrompt = this.promptGenerator.generateMessages(promptInfo, "CHATTESTER");
-                config.useExtra = false;
-                ChatResponse response = ChatGenerator.chat(config, intentionPrompt);
-                String intention = ChatGenerator.getContentByResponse(response);
-
-                // set intention in user prompt
-                prompt = promptGenerator.generateMessages(promptInfo, "CHATTESTER");
-                ChatMessage userChatMessage = prompt.get(1);
-                String oldContent = userChatMessage.getContent();
-                int lastBraceIndex = oldContent.lastIndexOf("}");
-                userChatMessage.setContent(
-                        new StringBuilder(oldContent).insert(lastBraceIndex + 1, "\n//Method intention\n" + intention).toString()
-                );
+                if(config.useIntention) {
+                    config.getLogger().info("Creating intention for method < " + methodInfo.methodName + " > ...");
+                    List<ChatMessage> intentionPrompt = this.promptGenerator.generateMessages(promptInfo, "CHATTESTER");
+                    config.useExtra = false;
+                    ChatResponse response = ChatGenerator.chat(config, intentionPrompt);
+                    String intention = ChatGenerator.getContentByResponse(response);
+                    // set intention in user prompt
+                    prompt = promptGenerator.generateMessages(promptInfo, "CHATTESTER");
+                    ChatMessage userChatMessage = prompt.get(1);
+                    String oldContent = userChatMessage.getContent();
+                    int lastBraceIndex = oldContent.lastIndexOf("}");
+                    userChatMessage.setContent(
+                            new StringBuilder(oldContent).insert(lastBraceIndex + 1, "\n//Method intention\n" + intention).toString()
+                    );
+                }
+                else{
+                    config.useExtra = false;
+                    prompt = promptGenerator.generateMessages(promptInfo, "CHATTESTER");
+                }
 
                  config.getLogger().info("Generating test for method < " + methodInfo.methodName + " > round " + rounds + " ...");
             } else if (promptInfo.getErrorMsg() != null) {
+                totalCorrectionsCount++; // Increment the corrections counter
                 assert(!promptInfo.getErrorMsg().getErrorMessage().isEmpty());
                 if (promptInfo.getErrorMsg().getErrorMessage().size() >= errorNum) { //todo 这里errorNum为int max,基本触发不了吧
                     invalidRefinementCount++;
-                    if (invalidRefinementCount >= 3) {
+                    if (invalidRefinementCount >= config.maxInvalidRefinementCount) {
                          config.getLogger().info("Exceeding maximum invalid refinement count, break.");
+                        System.out.println("Too many fixes");
                         break;
                     }
                 }
                 errorNum = promptInfo.getErrorMsg().getErrorMessage().size();
                 // iterate repair process
-                 config.getLogger().info("Fixing test for method < " + methodInfo.methodName + " > round " + rounds + " ...");
+                config.getLogger().info("Fixing test for method < " + methodInfo.methodName + " > round " + rounds + " ...");
                 prompt = promptGenerator.generateMessages(promptInfo, "CHATTESTER");
                 TestMessage errorMsg = promptInfo.getErrorMsg();
                 if (errorMsg.getErrorType().equals(TestMessage.ErrorType.COMPILE_ERROR)) {
@@ -171,7 +182,7 @@ public class BenchmarkRunner extends MethodRunner {
             if (!record.isHasCode()) {
                 continue;
             }
-            System.out.println("Code:"+code);
+
             if (CodeExtractor.isTestMethod(code)) {
                 TestSkeleton skeleton = new TestSkeleton(promptInfo); // test skeleton to wrap a test method
                 code = skeleton.build(code);
@@ -185,11 +196,24 @@ public class BenchmarkRunner extends MethodRunner {
             if (repair.isSuccess()) {
                 record.setHasError(false);
                 exportRecord(promptInfo, classInfo, record.getAttempt());
+                // Call the CSV logging method
+                writeBenchmarkResult(// method name
+                        savePath.toString(),                          // file path
+                        rounds + 1,                                   // number of interactions (rounds)
+                        totalCorrectionsCount,                       // number of corrections
+                        true                                        // result (successful test)
+                );
                 return true;
             }
             record.setHasError(true);
             record.setErrorMsg(promptInfo.getErrorMsg());
         }
+        writeBenchmarkResult(// method name
+                savePath.toString(),                          // file path
+                config.getMaxRounds(),                                   // number of interactions (rounds)
+                totalCorrectionsCount,                       // number of corrections
+                false                                        // result (successful test)
+        );
         exportRecord(pc.getPromptInfo(), classInfo, num);
         return false;
     }
@@ -207,9 +231,7 @@ public class BenchmarkRunner extends MethodRunner {
         ChatResponse response = ChatGenerator.chat(config, prompt);
         String content = ChatGenerator.getContentByResponse(response);
         config.getLogger().debug("[Response]:\n" + content);
-        System.out.println("[Response]:\n" + content);
         String code = ChatGenerator.extractCodeByContent(content);
-        System.out.println("[Extracted]:\n" + content);
         record.setPromptToken(response.getUsage().getPromptTokens());
         record.setResponseToken(response.getUsage().getCompletionTokens());
         record.setPrompt(prompt);
@@ -305,4 +327,31 @@ public class BenchmarkRunner extends MethodRunner {
 
         return errors;
     }
+
+    public void writeBenchmarkResult(String filePath,int numInteractions, int numCorrections, boolean result) {
+        String csvFilePath = config.getBenchMarkCsv(); // Path to the CSV file
+        boolean isFileNew = !(new File(csvFilePath).exists());
+        String prompt = "direct";
+        if(config.useIntention){
+            prompt = "intention";
+        }
+        String project = config.getPluginSign();
+        String className = classInfo.getFullClassName();
+        String methodName = methodInfo.getMethodName();
+        String model = config.getModel().getModelName();
+        try (FileWriter writer = new FileWriter(csvFilePath, true)) {
+            // Write the header if the file is new
+            if (isFileNew) {
+                writer.write("project,class,method,file,num_interactions,num_corrections,result,model,prompt\n");
+            }
+
+            // Write the benchmark result as a new line
+            writer.write(String.format("%s,%s,%s,%s,%d,%d,%s,%s,%s\n",
+                    project, className, methodName, filePath,
+                    numInteractions, numCorrections, result ? "SUCCESS" : "FAILURE", model,prompt));
+        } catch (IOException e) {
+            config.getLogger().error("Failed to write benchmark in "+csvFilePath+" result to CSV: " + e.getMessage());
+        }
+    }
+
 }

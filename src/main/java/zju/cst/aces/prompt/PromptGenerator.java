@@ -89,7 +89,6 @@ public class PromptGenerator {
             chatMessages.add(ChatMessage.ofSystem(createSystemPrompt(promptInfo, selectPromptFile(templateName, true).getGenerateSystem())));
             chatMessages.add(ChatMessage.of(createUserPrompt(promptInfo, selectPromptFile(templateName, true).getGenerate())));
         }
-
         return chatMessages;
     }
     public PromptFile selectPromptFile(String templateName, boolean ifRepair) {
@@ -116,6 +115,8 @@ public class PromptGenerator {
                 }
             case "CHATTESTER":
                 return PromptFile.chattester_repair;
+            case "BENCHMARK":
+                return PromptFile.chattester_repair;
             case "SYMPROMPT":
                 return PromptFile.chatunitest_repair;
             default:
@@ -137,6 +138,8 @@ public class PromptGenerator {
                 setTelpaInitData();
                 return PromptFile.telpa_init;
             case "CHATTESTER":
+                return config.useExtra ? PromptFile.chattester_extra : PromptFile.chattester_init;
+            case "BENCHMARK":
                 return config.useExtra ? PromptFile.chattester_extra : PromptFile.chattester_init;
             case "MUTAP":
                 return PromptFile.mutap_init;
@@ -166,11 +169,7 @@ public class PromptGenerator {
     public String createUserPrompt(PromptInfo promptInfo, String templateName) {
         try {
             this.promptTemplate.buildDataModel(config, promptInfo);
-            if (templateName.equals(promptTemplate.TEMPLATE_REPAIR)) { // repair process
-                return promptTemplate.renderTemplate(promptTemplate.TEMPLATE_REPAIR);
-            } else {
-                return promptTemplate.renderTemplate(templateName);
-            }
+            return promptTemplate.renderTemplate(templateName);
         } catch (Exception e) {
             throw new RuntimeException("An error occurred while generating the user prompt: " + e);
         }
