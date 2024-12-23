@@ -56,13 +56,11 @@ public class Task {
             log.info(String.format("\n==========================\n[%s] Skip pom-packaging ...",config.pluginSign));
             return;
         }
-
         Phase phase = PhaseImpl.createPhase(config);
         phase.prepare();
 
         log.info(String.format("\n==========================\n[%s] Generating tests for class: < ",config.pluginSign) + className
                 + "> method: < " + methodName + " > ...");
-
         try {
             String fullClassName = getFullClassName(config, className);
             ClassInfo classInfo = AbstractRunner.getClassInfo(config, fullClassName);
@@ -81,7 +79,7 @@ public class Task {
                 try {
                     this.runner.runMethod(fullClassName, methodInfo);
                 } catch (Exception e) {
-                    log.error("Error when generating tests for " + methodName + " in " + className + " " + config.getProject().getArtifactId() + "\n" + e.getMessage());
+                    log.error("Error MethodId when generating tests for " + methodName + " in " + className + " " + config.getProject().getArtifactId() + "\n" + e.getMessage());
                 }
             } else {
                 for (String mSig : classInfo.methodSigs.keySet()) {
@@ -93,7 +91,7 @@ public class Task {
                         try {
                             this.runner.runMethod(fullClassName, methodInfo);
                         } catch (Exception e) {
-                            log.error("Error when generating tests for " + methodName + " in " + className + " " + config.getProject().getArtifactId() + "\n" + e.getMessage());
+                            log.error("Error MethodName when generating tests for " + methodName + " in " + className + " " + config.getProject().getArtifactId() + "\n" + e.getMessage());
                         }
                     }
                 }

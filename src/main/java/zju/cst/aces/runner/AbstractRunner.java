@@ -283,12 +283,12 @@ public abstract class AbstractRunner {
             String fullClassName = Task.getFullClassName(config, className);
             Path classInfoPath = config.getParseOutput().resolve(fullClassName.replace(".", File.separator)).resolve("class.json");
             if (!classInfoPath.toFile().exists()) {
-                System.out.println("Warning:Path not exists:"+classInfoPath.toString());
+                config.getLogger().debug("Warning:Path not exists:"+classInfoPath.toString());
                 return null;
             }
             return GSON.fromJson(new String(Files.readAllBytes(classInfoPath), StandardCharsets.UTF_8), ClassInfo.class);
         } catch (InvalidPathException e) {
-            System.out.println("Warning:Cant read class"+className+"error:"+e.getMessage());
+            config.getLogger().debug("Warning:Cant read class"+className+"error:"+e.getMessage());
             return null;
         }
     }

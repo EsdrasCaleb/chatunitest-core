@@ -20,11 +20,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class BenchmarkRunner extends MethodRunner {
+    int totalCorrectionsCount = 0; // Initialize total corrections counter
+
     public BenchmarkRunner(Config config, String fullClassName, MethodInfo methodInfo) throws IOException {
         super(config, fullClassName, methodInfo);
     }
@@ -57,7 +60,9 @@ public class BenchmarkRunner extends MethodRunner {
         //prompt generation里面的
         pc.setFullTestName(fullTestName);
         pc.setTestName(testName);
-
+        if(num==0){
+            totalCorrectionsCount = 0;
+        }
         PromptInfo promptInfo = pc.getPromptInfo();
         promptInfo.setFullTestName(fullTestName);
         Path savePath = config.getTestOutput().resolve(fullTestName.replace(".", File.separator) + ".java");
@@ -65,7 +70,6 @@ public class BenchmarkRunner extends MethodRunner {
 
         int errorNum = Integer.MAX_VALUE;
         int invalidRefinementCount = 0;
-        int totalCorrectionsCount = 0; // Initialize total corrections counter
         config.useExtra = true;
         for (int rounds = 0; rounds < config.getMaxRounds(); rounds++) {
             promptInfo.addRecord(new RoundRecord(rounds));
@@ -199,7 +203,7 @@ public class BenchmarkRunner extends MethodRunner {
                 // Call the CSV logging method
                 writeBenchmarkResult(// method name
                         savePath.toString(),                          // file path
-                        rounds + 1,                                   // number of interactions (rounds)
+                        rounds + 1+num*config.getMaxRounds(),                                   // number of interactions (rounds)
                         totalCorrectionsCount,                       // number of corrections
                         true                                        // result (successful test)
                 );
@@ -208,12 +212,14 @@ public class BenchmarkRunner extends MethodRunner {
             record.setHasError(true);
             record.setErrorMsg(promptInfo.getErrorMsg());
         }
-        writeBenchmarkResult(// method name
-                savePath.toString(),                          // file path
-                config.getMaxRounds(),                                   // number of interactions (rounds)
-                totalCorrectionsCount,                       // number of corrections
-                false                                        // result (successful test)
-        );
+        if(num==config.getTestNumber()) {
+            writeBenchmarkResult(// method name
+                    savePath.toString(),                          // file path
+                    config.getMaxRounds()+num*config.getMaxRounds(),                                   // number of interactions (rounds)
+                    totalCorrectionsCount,                       // number of corrections
+                    false                                        // result (successful test)
+            );
+        }
         exportRecord(pc.getPromptInfo(), classInfo, num);
         return false;
     }
@@ -338,7 +344,7 @@ public class BenchmarkRunner extends MethodRunner {
         String project = config.getPluginSign();
         String className = classInfo.getFullClassName();
         String methodName = methodInfo.getMethodName();
-        String model = config.getModel().getModelName();
+        String model = config.getModel().getDefaultConfig().getModelName();
         try (FileWriter writer = new FileWriter(csvFilePath, true)) {
             // Write the header if the file is new
             if (isFileNew) {
