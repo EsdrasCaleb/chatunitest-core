@@ -212,7 +212,7 @@ public class BenchmarkRunner extends MethodRunner {
             record.setHasError(true);
             record.setErrorMsg(promptInfo.getErrorMsg());
         }
-        if(num==config.getTestNumber()) {
+        if(num>=(config.getTestNumber()-1)) {
             writeBenchmarkResult(// method name
                     savePath.toString(),                          // file path
                     config.getMaxRounds()+num*config.getMaxRounds(),                                   // number of interactions (rounds)

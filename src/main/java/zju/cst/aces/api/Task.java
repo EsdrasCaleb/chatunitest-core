@@ -178,7 +178,7 @@ public class Task {
                     }
 
                     this.runner.runClass(fullClassName);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     log.error(String.format("[%s] Generate tests for class ",config.pluginSign) + className + " failed: " + e);
                 }
             }
