@@ -212,14 +212,12 @@ public class BenchmarkRunner extends MethodRunner {
             record.setHasError(true);
             record.setErrorMsg(promptInfo.getErrorMsg());
         }
-        if(num>=(config.getTestNumber()-1)) {
-            writeBenchmarkResult(// method name
-                    savePath.toString(),                          // file path
-                    config.getMaxRounds()+num*config.getMaxRounds(),                                   // number of interactions (rounds)
-                    totalCorrectionsCount,                       // number of corrections
-                    false                                        // result (successful test)
-            );
-        }
+        writeBenchmarkResult(// method name
+                savePath.toString(),                          // file path
+                config.getMaxRounds()+num*config.getMaxRounds(),                                   // number of interactions (rounds)
+                totalCorrectionsCount,                       // number of corrections
+                false                                        // result (successful test)
+        );
         exportRecord(pc.getPromptInfo(), classInfo, num);
         return false;
     }
