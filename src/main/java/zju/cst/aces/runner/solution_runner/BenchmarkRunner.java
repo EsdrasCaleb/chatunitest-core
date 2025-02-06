@@ -1,9 +1,20 @@
 package zju.cst.aces.runner.solution_runner;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import org.junit.Test;
 import zju.cst.aces.api.config.Config;
 import zju.cst.aces.api.impl.ChatGenerator;
 import zju.cst.aces.api.impl.PromptConstructorImpl;
 import zju.cst.aces.api.impl.RepairImpl;
+import zju.cst.aces.api.impl.ValidatorImpl;
 import zju.cst.aces.api.phase.Phase;
 import zju.cst.aces.api.phase.PhaseImpl;
 import zju.cst.aces.dto.*;
@@ -13,16 +24,23 @@ import zju.cst.aces.runner.MethodRunner;
 import zju.cst.aces.util.CodeExtractor;
 import zju.cst.aces.util.chattester.TesterValidator;
 
+import zju.cst.aces.util.TestProcessor;
+import org.junit.platform.launcher.listeners.TestExecutionSummary;
+import zju.cst.aces.util.MutationOperatorUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 public class BenchmarkRunner extends MethodRunner {
@@ -196,28 +214,62 @@ public class BenchmarkRunner extends MethodRunner {
             promptInfo.setUnitTest(code);
 
             record.setCode(code);
-            repair.LLMBasedRepair(code, record.getRound());
+            repair.LLMBasedRepair(code, record.getRound(),false);
             if (repair.isSuccess()) {
                 record.setHasError(false);
                 exportRecord(promptInfo, classInfo, record.getAttempt());
+
+                //Mutations
+                int tests = 0;
+                int killed_null_m =0;
+                int killed_var_m =0;
+                int killed_aritimetic_m =0;
+                int killed_logic_m =0;
+                TestProcessor testProcessor = new TestProcessor(fullTestName);
+                String finalCode = promptInfo.getUnitTest();
+
+                if (rounds >= 1) {
+                    finalCode = testProcessor.addCorrectTest(promptInfo);
+                }
+                finalCode = MutationOperatorUtil.changeClassName(finalCode, className,className+"_mutated");
+                int[] result;
+                System.out.println("Testing null mutation");
+                String mutatedCode = MutationOperatorUtil.applyNullMutation(promptInfo.getClassInfo().compilationUnitCode,
+                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
+                if(mutatedCode!="") {
+                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
+                    try {
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                else{
+                    killed_null_m =-1;
+                }
+
+
                 // Call the CSV logging method
+                String testFilePath = savePath.toString();
                 writeBenchmarkResult(// method name
-                        savePath.toString(),                          // file path
+                        testFilePath,                          // file path
                         rounds + 1+num*config.getMaxRounds(),                                   // number of interactions (rounds)
                         totalCorrectionsCount,                       // number of corrections
-                        true                                        // result (successful test)
+                        true, tests,new int[]{killed_null_m,killed_var_m,killed_aritimetic_m,killed_logic_m}                                        // result (successful test)
                 );
                 return true;
             }
             record.setHasError(true);
             record.setErrorMsg(promptInfo.getErrorMsg());
         }
-        writeBenchmarkResult(// method name
-                savePath.toString(),                          // file path
-                config.getMaxRounds()+num*config.getMaxRounds(),                                   // number of interactions (rounds)
-                totalCorrectionsCount,                       // number of corrections
-                false                                        // result (successful test)
-        );
+        if(num>=(config.getTestNumber()-1)) {
+            writeBenchmarkResult(// method name
+                    savePath.toString(),                          // file path
+                    config.getMaxRounds() + num * config.getMaxRounds(),                                   // number of interactions (rounds)
+                    totalCorrectionsCount,                       // number of corrections
+                    false,0,new int[]{0,0,0,0}                                        // result (successful test)
+            );
+        }
         exportRecord(pc.getPromptInfo(), classInfo, num);
         return false;
     }
@@ -332,7 +384,77 @@ public class BenchmarkRunner extends MethodRunner {
         return errors;
     }
 
-    public void writeBenchmarkResult(String filePath,int numInteractions, int numCorrections, boolean result) {
+    public int[] runMutation(String fullTestName, PromptInfo promptInfo, String code, TestProcessor testProcessor) {
+        String testName = fullTestName.substring(fullTestName.lastIndexOf(".") + 1);
+
+        try {
+            // Compile Mutated Code
+            Path compilationErrorPath = config.getErrorOutput().resolve(testName + "_Mutation_CompilationError.txt");
+            boolean compileResult = config.getValidator().semanticValidate(code, testName, compilationErrorPath, promptInfo);
+
+            if (!compileResult) {
+                config.getLogger().info("Mutated function < " + promptInfo.getMethodInfo().getMethodName() + " > compilation failed");
+                return new int[]{-1};
+            }
+
+            if (config.isNoExecution()) {
+                config.getLogger().info("Mutated function < " + promptInfo.getMethodInfo().getMethodName() + " > cannot be tested");
+                return new int[]{-1};
+            }
+
+            // Execute Tests
+            TestExecutionSummary summary = config.getValidator().execute(fullTestName);
+            if (summary == null) {
+                config.getLogger().warn("Mutated function < " + promptInfo.getMethodInfo().getMethodName() + " > execution timeout");
+                return new int[]{-1};
+            }
+
+            List<String> errors = extractErrorBySummary(summary, fullTestName);
+            int[] result = getTestStats(code,summary,testProcessor);
+            if (summary.getTestsFailedCount() > 0 && isOnlyAssertionError(errors)) {
+                config.getLogger().info("Mutation killed: Test failed as expected for function < " + promptInfo.getMethodInfo().getMethodName() + " >Testes/killed:"+result);
+                return result;
+            }
+            config.getLogger().info("Mutation survived: Function < " + promptInfo.getMethodInfo().getMethodName() + " > did not cause test failure");
+            return new int[]{result[0],0};
+        } catch (Exception e){
+            System.out.println("Mutation excepetion: " + e.getMessage());
+        }
+        return new int[]{-1};
+    }
+
+    public int[] getTestStats(String result, TestExecutionSummary summary,TestProcessor testProcessor) {
+        int totalMethods = 0;
+        int failedTests = 0;
+        JavaParser parser = new JavaParser();
+
+        try {
+            ParseResult<CompilationUnit> parseResult = parser.parse(result);
+            CompilationUnit cu = parseResult.getResult().orElseThrow(() -> new NoSuchElementException("CompilationUnit not present in parse result"));
+            List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+            List<Integer> errorLineNum = testProcessor.getErrorLineNum(summary);
+
+            for (MethodDeclaration method : methods) {
+                if (testProcessor.isTestCase(method)) {
+                    totalMethods++;
+
+                    if (testProcessor.containError(errorLineNum, method)) {
+                        failedTests++;
+                    }
+                }
+            }
+
+            if (cu.findAll(MethodDeclaration.class).stream().filter(testProcessor::isTestCase).collect(Collectors.toList()).isEmpty()) {
+                System.out.println("In TestProcessor.getTestStats: No test case left");
+            }
+        } catch (Exception e) {
+            System.out.println("In TestProcessor.getTestStats: " + e);
+        }
+        return new int[]{totalMethods, failedTests};
+    }
+
+
+    public void writeBenchmarkResult(String filePath,int numInteractions, int numCorrections, boolean result,int tests, int[] mutation_result) {
         String csvFilePath = config.getBenchMarkCsv(); // Path to the CSV file
         boolean isFileNew = !(new File(csvFilePath).exists());
         String prompt = "direct";
@@ -346,13 +468,13 @@ public class BenchmarkRunner extends MethodRunner {
         try (FileWriter writer = new FileWriter(csvFilePath, true)) {
             // Write the header if the file is new
             if (isFileNew) {
-                writer.write("project,class,method,file,num_interactions,num_corrections,result,model,prompt\n");
+                writer.write("project,class,method,file,num_interactions,num_corrections,result,model,mutation,prompt\n");
             }
 
             // Write the benchmark result as a new line
             writer.write(String.format("%s,%s,%s,%s,%d,%d,%s,%s,%s\n",
                     project, className, methodName, filePath,
-                    numInteractions, numCorrections, result ? "SUCCESS" : "FAILURE", model,prompt));
+                    numInteractions, numCorrections, result ? "SUCCESS" : "FAILURE", model,mutation_result,prompt));
         } catch (IOException e) {
             config.getLogger().error("Failed to write benchmark in "+csvFilePath+" result to CSV: " + e.getMessage());
         }

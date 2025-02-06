@@ -33,6 +33,11 @@ public class RepairImpl implements Repair {
 
     @Override
     public String LLMBasedRepair(String code, int rounds) {
+        return LLMBasedRepair(code, rounds, true);
+    }
+
+
+    public String LLMBasedRepair(String code, int rounds,boolean returnee) {
         PromptInfo promptInfo = promptConstructorImpl.getPromptInfo();
         promptInfo.setUnitTest(code);
         String fullClassName = promptInfo.getClassInfo().getPackageName() + "." + promptInfo.getClassInfo().getClassName();
@@ -46,13 +51,18 @@ public class RepairImpl implements Repair {
             config.getLogger().error("Exceed max prompt tokens: " + promptInfo.methodInfo.methodName + " Skipped.");
             return code;
         }
-        ChatResponse response = chat(config, promptConstructorImpl.getChatMessages());
-        String newcode = extractCodeByResponse(response);
-        if (newcode.isEmpty()) {
-            config.getLogger().warn("Test for method < " + promptInfo.methodInfo.methodName + " > extract code failed");
-            return code;
-        } else {
-            return newcode;
+        if(returnee) {
+            ChatResponse response = chat(config, promptConstructorImpl.getChatMessages());
+            String newcode = extractCodeByResponse(response);
+            if (newcode.isEmpty()) {
+                config.getLogger().warn("Test for method < " + promptInfo.methodInfo.methodName + " > extract code failed");
+                return code;
+            } else {
+                return newcode;
+            }
+        }
+        else{
+            return "";
         }
     }
 
