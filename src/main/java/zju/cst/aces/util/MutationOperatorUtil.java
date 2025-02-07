@@ -347,6 +347,19 @@ public class MutationOperatorUtil {
                 mutationApplied.set(true);
                 return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.PLUS); // Troca `-` → `+`
             }
+            if (binExpr.getOperator() == BinaryExpr.Operator.REMAINDER) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.PLUS); // Troca `&` → `-`
+            }
+            if (binExpr.getOperator() == BinaryExpr.Operator.DIVIDE) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.MULTIPLY); // Troca `*` → `/`
+            }
+            if (binExpr.getOperator() == BinaryExpr.Operator.MINUS) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.DIVIDE); // Troca `*` → `/`
+            }
+
         }
         return expr;
     }
@@ -364,6 +377,18 @@ public class MutationOperatorUtil {
             if (binExpr.getOperator() == BinaryExpr.Operator.OR) {
                 mutationApplied.set(true);
                 return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.AND); // Troca `||` → `&&`
+            }
+            if (binExpr.getOperator() == BinaryExpr.Operator.XOR) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.EQUALS);
+            }
+            if (binExpr.getOperator() == BinaryExpr.Operator.BINARY_OR) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.BINARY_AND);
+            }
+            if (binExpr.getOperator() == BinaryExpr.Operator.BINARY_AND) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.BINARY_OR);
             }
         }
         return expr;
@@ -390,6 +415,14 @@ public class MutationOperatorUtil {
             if (binExpr.getOperator() == BinaryExpr.Operator.LESS_EQUALS) {
                 mutationApplied.set(true);
                 return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.GREATER); // Troca `<=` → `>`
+            }
+            if (binExpr.getOperator() == BinaryExpr.Operator.EQUALS) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.NOT_EQUALS); // Troca `==` → `!=`
+            }
+            if (binExpr.getOperator() == BinaryExpr.Operator.NOT_EQUALS) {
+                mutationApplied.set(true);
+                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.EQUALS); // Troca `!=` → `==`
             }
         }
         return expr;

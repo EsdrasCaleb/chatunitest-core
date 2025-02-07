@@ -225,6 +225,8 @@ public class BenchmarkRunner extends MethodRunner {
                 int killed_var_m =0;
                 int killed_aritimetic_m =0;
                 int killed_logic_m =0;
+                int killed_rela_m =0;
+                int killed_bool_m =0;
                 TestProcessor testProcessor = new TestProcessor(fullTestName);
                 String finalCode = promptInfo.getUnitTest();
 
@@ -233,6 +235,8 @@ public class BenchmarkRunner extends MethodRunner {
                 }
                 finalCode = MutationOperatorUtil.changeClassName(finalCode, className,className+"_mutated");
                 int[] result;
+
+
                 System.out.println("Testing null mutation");
                 String mutatedCode = MutationOperatorUtil.applyNullMutation(promptInfo.getClassInfo().compilationUnitCode,
                         promptInfo.getMethodInfo().methodName,className,className+"_mutated");
@@ -240,14 +244,121 @@ public class BenchmarkRunner extends MethodRunner {
                     String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
                     try {
                         result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        tests = result[0];
+                        killed_null_m = result[1];
                     } catch (Exception e) {
                         System.out.println(e.getMessage());
                     }
                 }
                 else{
+                    System.out.println("Cant made null mutation");
                     killed_null_m =-1;
                 }
 
+                System.out.println("Testing variable mutation");
+                mutatedCode = MutationOperatorUtil.applyVariableMutation(promptInfo.getClassInfo().compilationUnitCode,
+                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
+                if(mutatedCode!="") {
+                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
+                    try {
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        if(tests>0&&result[0]!=tests) {
+                            System.out.println("Error diferent test number in mutation");
+                            tests = result[0];
+                        }
+                        killed_var_m = result[1];
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                else{
+                    System.out.println("Cant made variable mutation");
+                    killed_var_m =-1;
+                }
+
+                System.out.println("Testing boolean mutation");
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationBoolean(promptInfo.getClassInfo().compilationUnitCode,
+                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
+                if(mutatedCode!="") {
+                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
+                    try {
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        if(tests>0&&result[0]!=tests) {
+                            System.out.println("Error diferent test number in mutation");
+                            tests = result[0];
+                        }
+                        killed_bool_m = result[1];
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                else{
+                    System.out.println("Cant made boolean mutation");
+                    killed_bool_m =-1;
+                }
+
+                System.out.println("Testing aritimetic mutation");
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationAritimetic(promptInfo.getClassInfo().compilationUnitCode,
+                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
+                if(mutatedCode!="") {
+                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
+                    try {
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        if(tests>0&&result[0]!=tests) {
+                            System.out.println("Error diferent test number in mutation");
+                            tests = result[0];
+                        }
+                        killed_aritimetic_m = result[1];
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                else{
+                    System.out.println("Cant made aritimetic mutation");
+                    killed_aritimetic_m =-1;
+                }
+
+                System.out.println("Testing logic mutation");
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationLogic(promptInfo.getClassInfo().compilationUnitCode,
+                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
+                if(mutatedCode!="") {
+                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
+                    try {
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        if(tests>0&&result[0]!=tests) {
+                            System.out.println("Error diferent test number in mutation");
+                            tests = result[0];
+                        }
+                        killed_logic_m = result[1];
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                else{
+                    System.out.println("Cant made logic mutation");
+                    killed_logic_m =-1;
+                }
+
+                System.out.println("Testing relation mutation");
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationRelational(promptInfo.getClassInfo().compilationUnitCode,
+                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
+                if(mutatedCode!="") {
+                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
+                    try {
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        if(tests>0&&result[0]!=tests) {
+                            System.out.println("Error diferent test number in mutation");
+                            tests = result[0];
+                        }
+                        killed_rela_m = result[1];
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+                else{
+                    System.out.println("Cant made relation mutation");
+                    killed_rela_m =-1;
+                }
 
                 // Call the CSV logging method
                 String testFilePath = savePath.toString();
@@ -255,7 +366,8 @@ public class BenchmarkRunner extends MethodRunner {
                         testFilePath,                          // file path
                         rounds + 1+num*config.getMaxRounds(),                                   // number of interactions (rounds)
                         totalCorrectionsCount,                       // number of corrections
-                        true, tests,new int[]{killed_null_m,killed_var_m,killed_aritimetic_m,killed_logic_m}                                        // result (successful test)
+                        true, tests,new int[]{killed_null_m, killed_var_m, killed_bool_m,
+                                killed_aritimetic_m, killed_logic_m, killed_rela_m}                                        // result (successful test)
                 );
                 return true;
             }
@@ -267,7 +379,7 @@ public class BenchmarkRunner extends MethodRunner {
                     savePath.toString(),                          // file path
                     config.getMaxRounds() + num * config.getMaxRounds(),                                   // number of interactions (rounds)
                     totalCorrectionsCount,                       // number of corrections
-                    false,0,new int[]{0,0,0,0}                                        // result (successful test)
+                    false,0,null                                       // result (successful test)
             );
         }
         exportRecord(pc.getPromptInfo(), classInfo, num);
@@ -412,7 +524,7 @@ public class BenchmarkRunner extends MethodRunner {
             List<String> errors = extractErrorBySummary(summary, fullTestName);
             int[] result = getTestStats(code,summary,testProcessor);
             if (summary.getTestsFailedCount() > 0 && isOnlyAssertionError(errors)) {
-                config.getLogger().info("Mutation killed: Test failed as expected for function < " + promptInfo.getMethodInfo().getMethodName() + " >Testes/killed:"+result);
+                config.getLogger().info("Mutation killed: Test failed as expected for function < " + promptInfo.getMethodInfo().getMethodName() + " >Testes/killed:"+result[0]+"/"+result[1]);
                 return result;
             }
             config.getLogger().info("Mutation survived: Function < " + promptInfo.getMethodInfo().getMethodName() + " > did not cause test failure");
@@ -453,7 +565,8 @@ public class BenchmarkRunner extends MethodRunner {
         return new int[]{totalMethods, failedTests};
     }
 
-
+    //killed_null_m, killed_var_m, killed_bool_m,
+    //                                killed_aritimetic_m, killed_logic_m, killed_rela_m
     public void writeBenchmarkResult(String filePath,int numInteractions, int numCorrections, boolean result,int tests, int[] mutation_result) {
         String csvFilePath = config.getBenchMarkCsv(); // Path to the CSV file
         boolean isFileNew = !(new File(csvFilePath).exists());
@@ -468,13 +581,28 @@ public class BenchmarkRunner extends MethodRunner {
         try (FileWriter writer = new FileWriter(csvFilePath, true)) {
             // Write the header if the file is new
             if (isFileNew) {
-                writer.write("project,class,method,file,num_interactions,num_corrections,result,model,mutation,prompt\n");
+                writer.write("project,class,method,file,num_interactions," +
+                        "num_corrections,result,model,test_number,mutation_null,mutation_var," +
+                        "mutation_bool,mutation_aritime,mutation_logic,mutation_relat,prompt\n");
             }
-
-            // Write the benchmark result as a new line
-            writer.write(String.format("%s,%s,%s,%s,%d,%d,%s,%s,%s\n",
-                    project, className, methodName, filePath,
-                    numInteractions, numCorrections, result ? "SUCCESS" : "FAILURE", model,mutation_result,prompt));
+            if(result){
+                // Write the benchmark result as a new line
+                writer.write(String.format("%s,%s,%s,%s,%d," +
+                                "%d,%s,%s,%d,%d," +
+                                "%d,%d,%d,%d,%s\n",
+                        project, className, methodName, filePath, numInteractions,
+                        numCorrections,"SUCCESS", model,tests,mutation_result[0],
+                        mutation_result[1],mutation_result[2],mutation_result[3],mutation_result[4],prompt));
+            }
+            else{
+                // Write the benchmark result as a new line
+                writer.write(String.format("%s,%s,%s,%s,%d," +
+                                "%d,%s,%s,%d,%d," +
+                                "%d,%d,%d,%d,%s\n",
+                        project, className, methodName, filePath, numInteractions,
+                        numCorrections,"FAILURE", model,0,0,
+                        0,0,0,0,prompt));
+            }
         } catch (IOException e) {
             config.getLogger().error("Failed to write benchmark in "+csvFilePath+" result to CSV: " + e.getMessage());
         }
