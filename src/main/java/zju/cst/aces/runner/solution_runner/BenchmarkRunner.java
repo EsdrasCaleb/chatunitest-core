@@ -243,7 +243,7 @@ public class BenchmarkRunner extends MethodRunner {
                 if(mutatedCode!="") {
                     String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
                     try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
                         tests = result[0];
                         killed_null_m = result[1];
                     } catch (Exception e) {
@@ -261,7 +261,7 @@ public class BenchmarkRunner extends MethodRunner {
                 if(mutatedCode!="") {
                     String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
                     try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
                         if(tests>0&&result[0]!=tests) {
                             System.out.println("Error diferent test number in mutation");
                             tests = result[0];
@@ -282,7 +282,7 @@ public class BenchmarkRunner extends MethodRunner {
                 if(mutatedCode!="") {
                     String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
                     try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
                         if(tests>0&&result[0]!=tests) {
                             System.out.println("Error diferent test number in mutation");
                             tests = result[0];
@@ -303,7 +303,7 @@ public class BenchmarkRunner extends MethodRunner {
                 if(mutatedCode!="") {
                     String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
                     try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
                         if(tests>0&&result[0]!=tests) {
                             System.out.println("Error diferent test number in mutation");
                             tests = result[0];
@@ -324,7 +324,7 @@ public class BenchmarkRunner extends MethodRunner {
                 if(mutatedCode!="") {
                     String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
                     try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
                         if(tests>0&&result[0]!=tests) {
                             System.out.println("Error diferent test number in mutation");
                             tests = result[0];
@@ -345,7 +345,7 @@ public class BenchmarkRunner extends MethodRunner {
                 if(mutatedCode!="") {
                     String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
                     try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor);
+                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
                         if(tests>0&&result[0]!=tests) {
                             System.out.println("Error diferent test number in mutation");
                             tests = result[0];
@@ -496,7 +496,8 @@ public class BenchmarkRunner extends MethodRunner {
         return errors;
     }
 
-    public int[] runMutation(String fullTestName, PromptInfo promptInfo, String code, TestProcessor testProcessor) {
+    public static int[] runMutation(String fullTestName, PromptInfo promptInfo, String code,
+                                    TestProcessor testProcessor,Config config) {
         String testName = fullTestName.substring(fullTestName.lastIndexOf(".") + 1);
 
         try {
@@ -535,7 +536,7 @@ public class BenchmarkRunner extends MethodRunner {
         return new int[]{-1};
     }
 
-    public int[] getTestStats(String result, TestExecutionSummary summary,TestProcessor testProcessor) {
+    public static int[] getTestStats(String result, TestExecutionSummary summary,TestProcessor testProcessor) {
         int totalMethods = 0;
         int failedTests = 0;
         JavaParser parser = new JavaParser();
