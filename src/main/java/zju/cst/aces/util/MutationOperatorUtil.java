@@ -3,6 +3,7 @@ package zju.cst.aces.util;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -27,7 +28,8 @@ public class MutationOperatorUtil {
      * @param mutatedClassName  The name for the mutated subclass.
      * @return A string with the source code for the mutated subclass.
      */
-    public static String applyNullMutation(String code, String methodName, String className, String mutatedClassName) {
+    public static String applyNullMutation(String code, String methodName, String className,
+                                           String mutatedClassName, Boolean methodMutated) {
         try {
             CompilationUnit cu = StaticJavaParser.parse(code);
 
@@ -47,9 +49,15 @@ public class MutationOperatorUtil {
 
                 // Clone the method and override it in the subclass
                 MethodDeclaration mutatedMethod = method.clone();
+                if(methodMutated){
+                    mutatedMethod.setName(methodName + "_mutated");
+                }
+                else{
+                    mutatedMethod.addAnnotation(Override.class);
+                }
                 String defaultValue = getDefaultValue(method.getType().asString()); // Get default return value
                 mutatedMethod.setBody(new BlockStmt().addStatement(new ReturnStmt(defaultValue)));
-                mutatedMethod.addAnnotation(Override.class);
+
 
                 // Add the mutated method to the new class
                 mutatedClass.addMember(mutatedMethod);
@@ -75,7 +83,8 @@ public class MutationOperatorUtil {
      * @param mutatedClassName  The name for the mutated subclass.
      * @return A string with the source code for the mutated subclass.
      */
-    public static String applyVariableMutation(String code, String methodName, String originalClassName, String mutatedClassName) {
+    public static String applyVariableMutation(String code, String methodName, String originalClassName,
+                                               String mutatedClassName, Boolean methodMutated) {
         try {
             // Parse the original class code
             CompilationUnit cu = StaticJavaParser.parse(code);
@@ -109,12 +118,23 @@ public class MutationOperatorUtil {
             // Build the new body: call parent's method with default arguments.
             BlockStmt newBody = new BlockStmt();
             String call = "return super." + methodName + "(" + args + ");";
+            if(methodMutated){
+                call = "return " + methodName + "(" + args + ");";
+            }
+
             newBody.addStatement(call);
 
             // Clone the method and set its new body.
             MethodDeclaration mutatedMethod = method.clone();
+            if(methodMutated){
+                mutatedMethod.setName(methodName + "_mutated");
+            }
+            else{
+                mutatedMethod.addAnnotation(Override.class);
+            }
+
             mutatedMethod.setBody(newBody);
-            mutatedMethod.addAnnotation(Override.class);
+            //mutatedMethod.addAnnotation(Override.class);
 
             // Add the mutated method to the mutated class.
             mutatedClass.addMember(mutatedMethod);
@@ -151,8 +171,6 @@ public class MutationOperatorUtil {
         }
     }
 
-
-
     public static String changeClassName(String code, String originalName, String newName) {
         CompilationUnit cu = StaticJavaParser.parse(code);
 
@@ -165,6 +183,17 @@ public class MutationOperatorUtil {
         cu.findAll(NameExpr.class).stream()
                 .filter(name -> name.getNameAsString().equals(originalName))
                 .forEach(name -> name.setName(newName));
+        return cu.toString();
+    }
+
+    public static String changeMethodName(String code, String originalMethod, String newMethod) {
+        CompilationUnit cu = StaticJavaParser.parse(code);
+
+        // Replace method calls with the new method name
+        cu.findAll(MethodCallExpr.class).stream()
+                .filter(methodCall -> methodCall.getNameAsString().equals(originalMethod))
+                .forEach(methodCall -> methodCall.setName(newMethod));
+
         return cu.toString();
     }
 
@@ -196,23 +225,24 @@ public class MutationOperatorUtil {
     }
 
 
-    public static String applyOperatorMutationBoolean(String code, String methodName, String originalClassName, String mutatedClassName) {
-        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.BOOLEAN);
+    public static String applyOperatorMutationBoolean(String code, String methodName, String originalClassName, String mutatedClassName, Boolean methodMutated) {
+        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.BOOLEAN, methodMutated);
     }
 
-    public static String applyOperatorMutationAritimetic(String code, String methodName, String originalClassName, String mutatedClassName) {
-        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.ARITHMETIC);
+    public static String applyOperatorMutationAritimetic(String code, String methodName, String originalClassName, String mutatedClassName, Boolean methodMutated) {
+        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.ARITHMETIC, methodMutated);
     }
 
-    public static String applyOperatorMutationLogic(String code, String methodName, String originalClassName, String mutatedClassName) {
-        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.LOGICAL);
+    public static String applyOperatorMutationLogic(String code, String methodName, String originalClassName, String mutatedClassName, Boolean methodMutated) {
+        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.LOGICAL, methodMutated);
     }
 
-    public static String applyOperatorMutationRelational(String code, String methodName, String originalClassName, String mutatedClassName) {
-        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.LOGICAL);
+    public static String applyOperatorMutationRelational(String code, String methodName, String originalClassName, String mutatedClassName, Boolean methodMutated) {
+        return applyOperatorMutation(code, methodName, originalClassName, mutatedClassName, MutationType.LOGICAL, methodMutated);
     }
 
-    private static String applyOperatorMutation(String code, String methodName, String originalClassName, String mutatedClassName, MutationType mutationTypen) {
+    private static String applyOperatorMutation(String code, String methodName, String originalClassName, String mutatedClassName,
+                                                MutationType mutationTypen, Boolean methodMutated) {
         try {
             CompilationUnit cu = StaticJavaParser.parse(code);
 
@@ -236,8 +266,14 @@ public class MutationOperatorUtil {
             // Criar um clone mutado do método
             AtomicBoolean mutationApplied = new AtomicBoolean(false);
             MethodDeclaration mutatedMethod = originalMethod.clone();
+            if(methodMutated){
+                mutatedMethod.setName(methodName + "_mutated");
+            }
+            else{
+                mutatedMethod.addAnnotation(Override.class);
+            }
             mutatedMethod.setBody(mutateMethodBody(originalMethod.getBody().orElse(new BlockStmt()), mutationTypen, mutationApplied));
-            mutatedMethod.addAnnotation(Override.class);
+
 
             // Se nenhuma mutação foi aplicada, retorna vazio
             if (!mutationApplied.get()) {

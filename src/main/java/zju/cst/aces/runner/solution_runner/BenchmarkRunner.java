@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -218,157 +219,37 @@ public class BenchmarkRunner extends MethodRunner {
             if (repair.isSuccess()) {
                 record.setHasError(false);
                 exportRecord(promptInfo, classInfo, record.getAttempt());
+                //Debug
+                //System.out.println("Class fullname:"+classInfo.fullClassName+" method:"+methodInfo.methodName+" signature:"+methodInfo.methodSignature);
 
                 //Mutations
                 int tests = 0;
-                int killed_null_m =0;
-                int killed_var_m =0;
-                int killed_aritimetic_m =0;
-                int killed_logic_m =0;
-                int killed_rela_m =0;
-                int killed_bool_m =0;
+                int[] killedMutations = new int[6]; // {null, var, bool, arith, logic, rela}
                 TestProcessor testProcessor = new TestProcessor(fullTestName);
                 String finalCode = promptInfo.getUnitTest();
 
                 if (rounds >= 1) {
                     finalCode = testProcessor.addCorrectTest(promptInfo);
                 }
-                finalCode = MutationOperatorUtil.changeClassName(finalCode, className,className+"_mutated");
-                int[] result;
+                finalCode = MutationOperatorUtil.changeClassName(finalCode, className, className + "_mutated");
+                String[] mutationTypes = {"null", "variable", "boolean", "arithmetic", "logic", "relation"};
 
 
-                System.out.println("Testing null mutation");
-                String mutatedCode = MutationOperatorUtil.applyNullMutation(promptInfo.getClassInfo().compilationUnitCode,
-                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
-                if(mutatedCode!="") {
-                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
-                    try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
-                        tests = result[0];
-                        killed_null_m = result[1];
-                    } catch (Exception e) {
-                        System.out.println(e.getMessage());
+                for (int i = 0; i < 6; i++) {
+                    killedMutations[i] = runSingleMutationTest(mutationTypes[i], i,
+                            finalCode, fullTestName, promptInfo, testProcessor, config, className,false);
+                    if (i == 0 && killedMutations[i] > 0) {
+                        tests = killedMutations[i];
+                    } else if (i==-1) {
+                        String finalCodeMutated = MutationOperatorUtil.changeMethodName(finalCode, methodInfo.methodName, methodInfo.methodName+"_mutated");
+                        killedMutations[i] = runSingleMutationTest(mutationTypes[i], i,
+                                finalCodeMutated, fullTestName, promptInfo, testProcessor, config, className,true);
                     }
                 }
-                else{
-                    System.out.println("Cant made null mutation");
-                    killed_null_m =-1;
-                }
 
-                System.out.println("Testing variable mutation");
-                mutatedCode = MutationOperatorUtil.applyVariableMutation(promptInfo.getClassInfo().compilationUnitCode,
-                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
-                if(mutatedCode!="") {
-                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
-                    try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
-                        if(tests>0&&result[0]!=tests) {
-                            System.out.println("Error diferent test number in mutation");
-                            tests = result[0];
-                        }
-                        killed_var_m = result[1];
-                    } catch (Exception e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
-                else{
-                    System.out.println("Cant made variable mutation");
-                    killed_var_m =-1;
-                }
+                writeBenchmarkResult(savePath.toString(), rounds + 1 + num * config.getMaxRounds(),
+                        totalCorrectionsCount, true, tests, killedMutations);
 
-                System.out.println("Testing boolean mutation");
-                mutatedCode = MutationOperatorUtil.applyOperatorMutationBoolean(promptInfo.getClassInfo().compilationUnitCode,
-                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
-                if(mutatedCode!="") {
-                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
-                    try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
-                        if(tests>0&&result[0]!=tests) {
-                            System.out.println("Error diferent test number in mutation");
-                            tests = result[0];
-                        }
-                        killed_bool_m = result[1];
-                    } catch (Exception e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
-                else{
-                    System.out.println("Cant made boolean mutation");
-                    killed_bool_m =-1;
-                }
-
-                System.out.println("Testing aritimetic mutation");
-                mutatedCode = MutationOperatorUtil.applyOperatorMutationAritimetic(promptInfo.getClassInfo().compilationUnitCode,
-                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
-                if(mutatedCode!="") {
-                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
-                    try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
-                        if(tests>0&&result[0]!=tests) {
-                            System.out.println("Error diferent test number in mutation");
-                            tests = result[0];
-                        }
-                        killed_aritimetic_m = result[1];
-                    } catch (Exception e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
-                else{
-                    System.out.println("Cant made aritimetic mutation");
-                    killed_aritimetic_m =-1;
-                }
-
-                System.out.println("Testing logic mutation");
-                mutatedCode = MutationOperatorUtil.applyOperatorMutationLogic(promptInfo.getClassInfo().compilationUnitCode,
-                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
-                if(mutatedCode!="") {
-                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
-                    try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
-                        if(tests>0&&result[0]!=tests) {
-                            System.out.println("Error diferent test number in mutation");
-                            tests = result[0];
-                        }
-                        killed_logic_m = result[1];
-                    } catch (Exception e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
-                else{
-                    System.out.println("Cant made logic mutation");
-                    killed_logic_m =-1;
-                }
-
-                System.out.println("Testing relation mutation");
-                mutatedCode = MutationOperatorUtil.applyOperatorMutationRelational(promptInfo.getClassInfo().compilationUnitCode,
-                        promptInfo.getMethodInfo().methodName,className,className+"_mutated");
-                if(mutatedCode!="") {
-                    String null_mutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
-                    try {
-                        result = runMutation(fullTestName, promptInfo, null_mutation, testProcessor,config);
-                        if(tests>0&&result[0]!=tests) {
-                            System.out.println("Error diferent test number in mutation");
-                            tests = result[0];
-                        }
-                        killed_rela_m = result[1];
-                    } catch (Exception e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
-                else{
-                    System.out.println("Cant made relation mutation");
-                    killed_rela_m =-1;
-                }
-
-                // Call the CSV logging method
-                String testFilePath = savePath.toString();
-                writeBenchmarkResult(// method name
-                        testFilePath,                          // file path
-                        rounds + 1+num*config.getMaxRounds(),                                   // number of interactions (rounds)
-                        totalCorrectionsCount,                       // number of corrections
-                        true, tests,new int[]{killed_null_m, killed_var_m, killed_bool_m,
-                                killed_aritimetic_m, killed_logic_m, killed_rela_m}                                        // result (successful test)
-                );
                 return true;
             }
             record.setHasError(true);
@@ -525,6 +406,9 @@ public class BenchmarkRunner extends MethodRunner {
             List<String> errors = extractErrorBySummary(summary, fullTestName);
             int[] result = getTestStats(code,summary,testProcessor);
             if (summary.getTestsFailedCount() > 0 && isOnlyAssertionError(errors)) {
+                if(summary.getTestsFailedCount()>result[1]){
+                    result[1] = (int) summary.getTestsFailedCount();
+                }
                 config.getLogger().info("Mutation killed: Test failed as expected for function < " + promptInfo.getMethodInfo().getMethodName() + " >Testes/killed:"+result[0]+"/"+result[1]);
                 return result;
             }
@@ -606,6 +490,59 @@ public class BenchmarkRunner extends MethodRunner {
             }
         } catch (IOException e) {
             config.getLogger().error("Failed to write benchmark in "+csvFilePath+" result to CSV: " + e.getMessage());
+        }
+    }
+
+    private int runSingleMutationTest(String mutationType, int mutationFunction,
+                                      String finalCode, String fullTestName, PromptInfo promptInfo,
+                                      TestProcessor testProcessor, Config config, String className,
+                                      Boolean mutate_method) {
+        System.out.println("Testing " + mutationType + " mutation");
+        String mutatedCode="";
+        switch(mutationFunction){
+            case 0:
+                mutatedCode = MutationOperatorUtil.applyNullMutation(promptInfo.getClassInfo().compilationUnitCode,
+                        promptInfo.getMethodInfo().methodName, className,
+                        className + "_mutated",mutate_method);
+                break;
+            case 1:
+                mutatedCode = MutationOperatorUtil.applyVariableMutation(promptInfo.getClassInfo().compilationUnitCode,
+                    promptInfo.getMethodInfo().methodName, className,
+                    className + "_mutated",mutate_method);
+                break;
+            case 2:
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationBoolean(promptInfo.getClassInfo().compilationUnitCode,
+                    promptInfo.getMethodInfo().methodName, className,
+                    className + "_mutated",mutate_method);
+                break;
+            case 3:
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationAritimetic(promptInfo.getClassInfo().compilationUnitCode,
+                    promptInfo.getMethodInfo().methodName, className,
+                    className + "_mutated",mutate_method);
+                break;
+            case 4:
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationLogic(promptInfo.getClassInfo().compilationUnitCode,
+                    promptInfo.getMethodInfo().methodName, className,
+                    className + "_mutated",mutate_method);
+                break;
+            case 5:
+                mutatedCode = MutationOperatorUtil.applyOperatorMutationRelational(promptInfo.getClassInfo().compilationUnitCode,
+                    promptInfo.getMethodInfo().methodName, className,
+                    className + "_mutated",mutate_method);
+                break;
+        }
+
+        if (mutatedCode.isEmpty()) {
+            System.out.println("Can't perform " + mutationType + " mutation");
+            return -1;
+        }
+        String injectedMutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
+        try {
+            int[] result = runMutation(fullTestName, promptInfo, injectedMutation, testProcessor, config);
+            return result[1];
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return -1;
         }
     }
 

@@ -58,6 +58,7 @@ public class Config {
     public boolean enableMerge;
     public boolean enableObfuscate;
     public boolean useIntention;
+    public boolean logFaultAssert;
     public String benchMarkCsv;
     public String[] obfuscateGroupIds;
     public int maxThreads;
@@ -127,6 +128,7 @@ public class Config {
         public boolean enableMerge = true;
         public boolean enableObfuscate = false;
         public boolean useIntention=true;
+        public boolean logFaultAssert=false;
         public String benchMarkCsv="benchmark.csv";
         public String[] obfuscateGroupIds;
         public int maxThreads = Runtime.getRuntime().availableProcessors() * 5;
@@ -296,6 +298,11 @@ public class Config {
 
         public ConfigBuilder useIntention(boolean useIntention){
             this.useIntention = useIntention;
+            return this;
+        }
+
+        public ConfigBuilder logFaultAssert(boolean logFaultAssert){
+            this.logFaultAssert = logFaultAssert;
             return this;
         }
 
@@ -654,6 +661,7 @@ public class Config {
             config.setEnableMerge(this.enableMerge);
             config.setEnableObfuscate(this.enableObfuscate);
             config.setUseIntention(this.useIntention);
+            config.setLogFaultAssert(this.logFaultAssert);
             config.setBenchMarkCsv(this.benchMarkCsv);
             config.setObfuscateGroupIds(this.obfuscateGroupIds);
             config.setMaxThreads(this.maxThreads);

@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -302,6 +303,7 @@ public abstract class AbstractRunner {
                 .resolve(packagePath)
                 .resolve(info.className)
                 .resolve(ClassParser.getFilePathBySig(mSig, info));
+
         if (!depMethodInfoPath.toFile().exists()) {
             return null;
         }
@@ -549,6 +551,23 @@ public abstract class AbstractRunner {
                 // Remove errors successfully, recompile and re-execute test
                 if (testProcessed != null) {
                     config.getLogger().debug("[Original Test]:\n" + code);
+                    if(config.logFaultAssert) {
+
+                        try {
+                            String originalFilename = promptInfo.testPath.getFileName().toString();
+                            Path failedTestsPath = promptInfo.testPath.getParent().resolve("failedtests").resolve(originalFilename);
+
+                            // Criar diretório se não existir
+                            Files.createDirectories(failedTestsPath.getParent());
+
+                            // Escrever no arquivo
+                            Files.writeString(failedTestsPath, code, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+                            System.out.println("Arquivo salvo em: " + failedTestsPath);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
                     if (config.getValidator().semanticValidate(testProcessed, testName, compilationErrorPath, null)) {
                         compileSuccess=true;
                         if (config.getValidator().runtimeValidate(fullTestName)) {
