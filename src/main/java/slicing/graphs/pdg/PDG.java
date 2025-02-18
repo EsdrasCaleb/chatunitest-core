@@ -1,7 +1,7 @@
 package slicing.graphs.pdg;
 
 import com.github.javaparser.ast.body.CallableDeclaration;
-import lombok.var;
+//import lombok.var
 import slicing.arcs.Arc;
 import slicing.arcs.pdg.ControlDependencyArc;
 import slicing.arcs.pdg.DataDependencyArc;

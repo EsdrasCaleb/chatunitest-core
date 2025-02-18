@@ -376,8 +376,15 @@ public class MutationOperatorUtil {
         if (expr instanceof BinaryExpr) {
             BinaryExpr binExpr = (BinaryExpr) expr;
             if (binExpr.getOperator() == BinaryExpr.Operator.PLUS) {
-                mutationApplied.set(true);
-                return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.MINUS); // Troca `+` → `-`
+                boolean leftIsString = binExpr.getLeft().isStringLiteralExpr();
+                boolean rightIsString = binExpr.getRight().isStringLiteralExpr();
+
+                if (leftIsString || rightIsString) {
+                    System.out.println("This is a string concatenation, skipping mutation.");
+                } else {
+                    mutationApplied.set(true);
+                    return new BinaryExpr(binExpr.getLeft(), binExpr.getRight(), BinaryExpr.Operator.MINUS); // Change `+` → `-`
+                }
             }
             if (binExpr.getOperator() == BinaryExpr.Operator.MINUS) {
                 mutationApplied.set(true);

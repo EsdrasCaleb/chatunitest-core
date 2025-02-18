@@ -31,6 +31,8 @@ import zju.cst.aces.util.MutationOperatorUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -61,6 +63,13 @@ public class BenchmarkRunner extends MethodRunner {
      */
     @Override
     public boolean startRounds(final int num) throws IOException {
+        // If config norepeat
+        // Check if exists files in path with  className + separator + methodInfo.methodName + separator
+        //                + classInfo.methodSigs.get(methodInfo.methodSignature) + separator
+        //check if method used is the same signature
+        //check if benchmark_file has this file
+        //If all yes return true
+
         String testName = className + separator + methodInfo.methodName + separator
                 + classInfo.methodSigs.get(methodInfo.methodSignature) + separator + num + separator + "Test";
         String fullTestName = fullClassName + separator + methodInfo.methodName + separator
@@ -85,6 +94,12 @@ public class BenchmarkRunner extends MethodRunner {
         PromptInfo promptInfo = pc.getPromptInfo();
         promptInfo.setFullTestName(fullTestName);
         Path savePath = config.getTestOutput().resolve(fullTestName.replace(".", File.separator) + ".java");
+        if(config.onlyUpdateClass){
+            if(isClassInCSV(config.getBenchMarkCsv(),classInfo.getFullClassName())){
+                System.out.println("[BENCHMARK] Class " + classInfo.getFullClassName() + " has already generated!");
+                return true;
+            }
+        }
         promptInfo.setTestPath(savePath);
 
         int errorNum = Integer.MAX_VALUE;
@@ -234,16 +249,29 @@ public class BenchmarkRunner extends MethodRunner {
                 finalCode = MutationOperatorUtil.changeClassName(finalCode, className, className + "_mutated");
                 String[] mutationTypes = {"null", "variable", "boolean", "arithmetic", "logic", "relation"};
 
+                int[] aux;
 
                 for (int i = 0; i < 6; i++) {
-                    killedMutations[i] = runSingleMutationTest(mutationTypes[i], i,
-                            finalCode, fullTestName, promptInfo, testProcessor, config, className,false);
-                    if (i == 0 && killedMutations[i] > 0) {
-                        tests = killedMutations[i];
-                    } else if (i==-1) {
-                        String finalCodeMutated = MutationOperatorUtil.changeMethodName(finalCode, methodInfo.methodName, methodInfo.methodName+"_mutated");
-                        killedMutations[i] = runSingleMutationTest(mutationTypes[i], i,
-                                finalCodeMutated, fullTestName, promptInfo, testProcessor, config, className,true);
+                    try {
+                        aux = runSingleMutationTest(mutationTypes[i], i,
+                                finalCode, fullTestName, promptInfo, testProcessor, config, className, false);
+                        if (aux[0] == -1) {
+                            String finalCodeMutated = MutationOperatorUtil.changeMethodName(finalCode, methodInfo.methodName, methodInfo.methodName + "_mutated");
+                            aux = runSingleMutationTest(mutationTypes[i], i,
+                                    finalCodeMutated, fullTestName, promptInfo, testProcessor, config, className, true);
+
+                        }
+                        if (aux[0] > 0) {
+                            killedMutations[i] = aux[1];
+                            if (tests < aux[0]) {
+                                tests = aux[0];
+                            }
+                        } else {
+                            killedMutations[i] = -1;
+                        }
+                    }catch (Exception e) {
+                        System.out.println(e.getMessage());
+                        killedMutations[i] = -1;
                     }
                 }
 
@@ -450,6 +478,38 @@ public class BenchmarkRunner extends MethodRunner {
         return new int[]{totalMethods, failedTests};
     }
 
+    public static boolean isClassInCSV(String csvFilePath, String targetClassName) {
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFilePath))) {
+            String header = br.readLine(); // Read the first line (header)
+            if (header == null) return false;
+
+            String[] columns = header.split(","); // Assuming CSV is comma-separated
+            int classIndex = -1;
+
+            // Find the index of the "class" column
+            for (int i = 0; i < columns.length; i++) {
+                if (columns[i].trim().equalsIgnoreCase("class")) {
+                    classIndex = i;
+                    break;
+                }
+            }
+
+            // If "class" column is not found, return false
+            if (classIndex == -1) return false;
+
+            // Read each line and check if the class name matches
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] values = line.split(",");
+                if (values.length > classIndex && values[classIndex].trim().equals(targetClassName)) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
     //killed_null_m, killed_var_m, killed_bool_m,
     //                                killed_aritimetic_m, killed_logic_m, killed_rela_m
     public void writeBenchmarkResult(String filePath,int numInteractions, int numCorrections, boolean result,int tests, int[] mutation_result) {
@@ -461,7 +521,7 @@ public class BenchmarkRunner extends MethodRunner {
         }
         String project = config.getPluginSign();
         String className = classInfo.getFullClassName();
-        String methodName = methodInfo.getMethodName();
+        String methodName = methodInfo.getMethodSignature();
         String model = config.getModel().getDefaultConfig().getModelName();
         try (FileWriter writer = new FileWriter(csvFilePath, true)) {
             // Write the header if the file is new
@@ -474,26 +534,26 @@ public class BenchmarkRunner extends MethodRunner {
                 // Write the benchmark result as a new line
                 writer.write(String.format("%s,%s,%s,%s,%d," +
                                 "%d,%s,%s,%d,%d," +
-                                "%d,%d,%d,%d,%s\n",
+                                "%d,%d,%d,%d,%d,%s\n",
                         project, className, methodName, filePath, numInteractions,
                         numCorrections,"SUCCESS", model,tests,mutation_result[0],
-                        mutation_result[1],mutation_result[2],mutation_result[3],mutation_result[4],prompt));
+                        mutation_result[1],mutation_result[2],mutation_result[3],mutation_result[4],mutation_result[5],prompt));
             }
             else{
                 // Write the benchmark result as a new line
                 writer.write(String.format("%s,%s,%s,%s,%d," +
                                 "%d,%s,%s,%d,%d," +
-                                "%d,%d,%d,%d,%s\n",
+                                "%d,%d,%d,%d,%d,%s\n",
                         project, className, methodName, filePath, numInteractions,
-                        numCorrections,"FAILURE", model,0,0,
-                        0,0,0,0,prompt));
+                        numCorrections,"FAILURE", model,-1,-1,
+                        -1,-1,-1,-1,-1,prompt));
             }
         } catch (IOException e) {
             config.getLogger().error("Failed to write benchmark in "+csvFilePath+" result to CSV: " + e.getMessage());
         }
     }
 
-    private int runSingleMutationTest(String mutationType, int mutationFunction,
+    private int[] runSingleMutationTest(String mutationType, int mutationFunction,
                                       String finalCode, String fullTestName, PromptInfo promptInfo,
                                       TestProcessor testProcessor, Config config, String className,
                                       Boolean mutate_method) {
@@ -534,15 +594,15 @@ public class BenchmarkRunner extends MethodRunner {
 
         if (mutatedCode.isEmpty()) {
             System.out.println("Can't perform " + mutationType + " mutation");
-            return -1;
+            return new int[]{-1};
         }
         String injectedMutation = MutationOperatorUtil.injectMutationClass(finalCode, mutatedCode);
         try {
             int[] result = runMutation(fullTestName, promptInfo, injectedMutation, testProcessor, config);
-            return result[1];
+            return result;
         } catch (Exception e) {
             System.out.println(e.getMessage());
-            return -1;
+            return new int[]{-1};
         }
     }
 

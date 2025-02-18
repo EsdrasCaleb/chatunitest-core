@@ -15,7 +15,7 @@ import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclarati
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedType;
 import com.github.javaparser.symbolsolver.model.typesystem.ReferenceTypeImpl;
-import lombok.var;
+//import lombok.var
 import slicing.graphs.ClassGraph;
 import slicing.nodes.GraphNode;
 

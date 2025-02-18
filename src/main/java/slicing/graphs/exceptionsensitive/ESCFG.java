@@ -9,7 +9,6 @@ import com.github.javaparser.resolution.Resolvable;
 import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
-import lombok.var;
 import slicing.arcs.cfg.ControlFlowArc;
 import slicing.graphs.augmented.ACFG;
 import slicing.graphs.augmented.ACFGBuilder;

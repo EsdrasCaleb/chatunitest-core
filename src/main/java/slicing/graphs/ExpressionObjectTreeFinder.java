@@ -8,7 +8,7 @@ import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.utils.Pair;
-import lombok.var;
+//import lombok.var
 import slicing.nodes.GraphNode;
 import slicing.nodes.ObjectTree;
 import slicing.nodes.VariableAction;

@@ -5,7 +5,7 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.SuperExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
-import lombok.var;
+//import lombok.var
 import slicing.graphs.CallGraph;
 import slicing.graphs.cfg.CFG;
 import slicing.nodes.GraphNode;

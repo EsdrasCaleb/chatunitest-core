@@ -15,7 +15,7 @@ import com.github.javaparser.resolution.declarations.ResolvedClassDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
 import lombok.Getter;
-import lombok.var;
+//import lombok.var
 import org.jgrapht.graph.DirectedPseudograph;
 import slicing.arcs.Arc;
 import slicing.nodes.ObjectTree;

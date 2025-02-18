@@ -6,7 +6,7 @@ import com.github.javaparser.resolution.Resolvable;
 import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
-import lombok.var;
+//import lombok.var
 import slicing.arcs.sdg.ReturnArc;
 import slicing.graphs.CallGraph;
 import slicing.graphs.sdg.CallConnector;

@@ -13,7 +13,7 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.types.ResolvedType;
 import lombok.Data;
-import lombok.var;
+//import lombok.var
 import slicing.graphs.CallGraph;
 import slicing.graphs.jsysdg.JSysDG;
 import slicing.graphs.sdg.SDG;

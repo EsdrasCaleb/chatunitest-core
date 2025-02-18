@@ -3,7 +3,7 @@ package slicing.graphs.sdg;
 import com.github.javaparser.ast.body.CallableDeclaration;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
-import lombok.var;
+//import lombok.var
 import slicing.graphs.BackwardDataFlowAnalysis;
 import slicing.graphs.CallGraph;
 import slicing.graphs.cfg.CFG;

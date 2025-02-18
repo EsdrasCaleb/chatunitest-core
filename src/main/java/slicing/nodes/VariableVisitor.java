@@ -12,7 +12,7 @@ import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclarati
 import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
-import lombok.var;
+//import lombok.var
 import slicing.graphs.ClassGraph;
 import slicing.graphs.ExpressionObjectTreeFinder;
 import slicing.graphs.GraphNodeContentVisitor;

@@ -1,7 +1,7 @@
 package slicing.graphs.jsysdg;
 
 import com.github.javaparser.ast.body.CallableDeclaration;
-import lombok.var;
+//import lombok.var
 import slicing.arcs.Arc;
 import slicing.graphs.CallGraph;
 import slicing.graphs.sdg.AbstractSummaryArcAnalyzer;

@@ -51,12 +51,12 @@ public class AskGPT {
                 Request request = new Request.Builder().url(modelConfig.getUrl()).post(body).addHeader("Content-Type", "application/json").addHeader("Authorization", "Bearer " + apiKey).build();
 
                 response = config.getClient().newCall(request).execute();
-                if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
                 try {
                     Thread.sleep(config.sleepTime);
                 } catch (InterruptedException ie) {
-                    throw new RuntimeException("In AskGPT.askChatGPT: " + ie);
+                    throw new RuntimeException("In AskGPT.askChatGPT: " + ie.getMessage());
                 }
+                if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
                 if (response.body() == null) throw new IOException("Response body is null.");
                 ChatResponse chatResponse = GSON.fromJson(response.body().string(), ChatResponse.class);
                 response.close();

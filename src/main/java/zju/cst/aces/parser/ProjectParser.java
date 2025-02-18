@@ -14,7 +14,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.types.ResolvedType;
-import lombok.var;
+//import lombok.var
 import org.apache.maven.shared.dependency.graph.DependencyNode;
 import slicing.graphs.CallGraph;
 import slicing.graphs.CallGraph.Edge;

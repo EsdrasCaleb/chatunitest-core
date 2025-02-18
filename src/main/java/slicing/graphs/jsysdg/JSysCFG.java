@@ -12,7 +12,7 @@ import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 import com.github.javaparser.ast.visitor.Visitable;
-import lombok.var;
+//import lombok.var
 import slicing.arcs.Arc;
 import slicing.graphs.ClassGraph;
 import slicing.graphs.ExpressionObjectTreeFinder;

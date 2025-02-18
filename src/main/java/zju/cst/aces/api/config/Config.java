@@ -105,6 +105,7 @@ public class Config {
     public String phaseType;
     public boolean useSlice;
     public boolean useExtra;
+    public boolean onlyUpdateClass;
 
     @Getter
     @Setter
@@ -173,6 +174,7 @@ public class Config {
         public String phaseType; //TODO
         public boolean useSlice;
         public boolean useExtra;
+        public boolean onlyUpdateClass;
 
         public ConfigBuilder(Project project) {
             initDefault(project);
@@ -318,6 +320,11 @@ public class Config {
 
         public ConfigBuilder useExtra(boolean useExtra){
             this.useExtra=useExtra;
+            return this;
+        }
+
+        public ConfigBuilder onlyUpdateClass(boolean onlyUpdateClass){
+            this.onlyUpdateClass=onlyUpdateClass;
             return this;
         }
 
@@ -700,6 +707,7 @@ public class Config {
             config.setPhaseType(this.phaseType);
             config.setUseSlice(this.useSlice);
             config.setUseExtra(this.useExtra);
+            config.setOnlyUpdateClass(this.onlyUpdateClass);
             config.setCoverageAnalyzer_jar_path(this.coverageAnalyzer_jar_path);
             config.setMax_coverage_improve_time(this.max_coverage_improve_time);
             return config;
@@ -746,6 +754,7 @@ public class Config {
         logger.info(" DependencyDepth >>> " + this.getDependencyDepth());
         logger.info(" coverageAnalyzer_jar_path >>> " + this.getCoverageAnalyzer_jar_path());
         logger.info(" PhaseType >>> " + this.phaseType);
+        logger.info(" OnlyUpdateClass >>> " + this.onlyUpdateClass);
         logger.info("\n===================================================================\n");
         try {
             Thread.sleep(1000);
